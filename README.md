@@ -1,36 +1,66 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Compass Commerce
 
-## Getting Started
+This app is the website and commerce shell that sits in front of the validated
+Compass licensing backend.
 
-First, run the development server:
+Current scope:
+
+- public product page for Compass Tri-Comp
+- Stripe-ready checkout entry point
+- operator-only entitlement provisioning form
+- manual portal for activate, refresh, and revoke testing
+- webhook-ready bridge into `POST /internal/v1/entitlements`
+
+It assumes the licensing backend already exists and is reachable over HTTP.
+
+## Environment
+
+Copy `.env.example` to `.env.local` and fill in what you already know.
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cp .env.example .env.local
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Required later for the full production flow:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- `NEXT_PUBLIC_SITE_URL`
+- `LICENSING_API_BASE_URL`
+- `LICENSING_ADMIN_API_TOKEN`
+- `OPERATOR_DASHBOARD_TOKEN`
+- `STRIPE_SECRET_KEY`
+- `STRIPE_WEBHOOK_SECRET`
+- `STRIPE_PRICE_ID_TRICOMP`
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Run
 
-## Learn More
+```bash
+npm install
+npm run dev
+```
 
-To learn more about Next.js, take a look at the following resources:
+Then open [http://localhost:3000](http://localhost:3000).
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Routes
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- `/` home and backend status
+- `/products/tri-comp` product page
+- `/checkout` Stripe checkout entry
+- `/portal` manual activate / refresh / revoke console
+- `/operator/provision` private entitlement creation form
 
-## Deploy on Vercel
+## API routes
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- `GET /api/licensing/health`
+- `POST /api/licensing/activate`
+- `POST /api/licensing/refresh`
+- `POST /api/licensing/revoke`
+- `POST /api/operator/provision`
+- `POST /api/checkout`
+- `POST /api/stripe/webhook`
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## What still needs user input
+
+- the public hostname you want to use
+- real Stripe secrets and price ids
+- customer auth and account storage choice
+- final production Caddy host config
