@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { getProduct } from "@/lib/catalog";
+import { buildProvisioningIds } from "@/lib/ids";
 import { appFlags, isStripeReadyForProduct } from "@/lib/env";
+import { getStripeClient } from "@/lib/stripe";
 
 type SearchParams = Record<string, string | string[] | undefined>;
 
@@ -16,6 +18,60 @@ const statusMessages: Record<string, string> = {
   unknown_product: "The selected product is not configured in the catalog.",
 };
 
+type CheckoutSessionSummary = {
+  customerEmail: string;
+  externalReference: string;
+  entitlementId: string;
+  licenseId: string;
+};
+
+async function getCheckoutSessionSummary(
+  status: string | undefined,
+  sessionId: string | undefined,
+  productId: string,
+): Promise<CheckoutSessionSummary | null> {
+  if (status !== "success" || !sessionId) {
+    return null;
+  }
+
+  const stripe = getStripeClient();
+  if (!stripe) {
+    return null;
+  }
+
+  try {
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
+    const customerEmail =
+      session.customer_details?.email
+      ?? session.customer_email
+      ?? session.metadata?.customerEmail
+      ?? "";
+    const externalReference =
+      session.client_reference_id
+      ?? session.metadata?.externalReference
+      ?? "";
+
+    if (!customerEmail || !externalReference) {
+      return null;
+    }
+
+    const ids = buildProvisioningIds({
+      productId: productId as "compass_tricomp",
+      customerEmail,
+      externalReference,
+    });
+
+    return {
+      customerEmail,
+      externalReference,
+      entitlementId: ids.entitlementId,
+      licenseId: ids.licenseId,
+    };
+  } catch {
+    return null;
+  }
+}
+
 export default async function CheckoutPage({
   searchParams,
 }: {
@@ -24,11 +80,14 @@ export default async function CheckoutPage({
   const params = await searchParams;
   const productId = getFirst(params.productId) ?? "compass_tricomp";
   const status = getFirst(params.status);
+  const sessionId = getFirst(params.session_id);
   const product = getProduct(productId) ?? getProduct("compass_tricomp");
 
   if (!product) {
     return null;
   }
+
+  const sessionSummary = await getCheckoutSessionSummary(status, sessionId, product.id);
 
   return (
     <main className="space-y-8 pb-8 pt-6">
@@ -121,6 +180,41 @@ export default async function CheckoutPage({
           </div>
         </article>
       </section>
+
+      {sessionSummary ? (
+        <section className="panel space-y-5 px-6 py-8">
+          <p className="eyebrow">Successful Stripe return</p>
+          <h2 className="text-2xl font-semibold tracking-tight text-[var(--foreground)]">
+            Expected provisioning identifiers for this checkout
+          </h2>
+          <div className="grid gap-4 lg:grid-cols-2">
+            <div className="rounded-[20px] border border-black/8 bg-white/70 px-4 py-4">
+              <p className="label">Entitlement id</p>
+              <p className="mt-2 break-all font-mono text-sm text-[var(--foreground)]">
+                {sessionSummary.entitlementId}
+              </p>
+            </div>
+            <div className="rounded-[20px] border border-black/8 bg-white/70 px-4 py-4">
+              <p className="label">License id</p>
+              <p className="mt-2 break-all font-mono text-sm text-[var(--foreground)]">
+                {sessionSummary.licenseId}
+              </p>
+            </div>
+          </div>
+          <div className="grid gap-4 text-sm leading-6 text-[var(--foreground)] lg:grid-cols-2">
+            <p className="rounded-[20px] border border-black/8 bg-white/70 px-4 py-4">
+              Customer email: {sessionSummary.customerEmail}
+            </p>
+            <p className="rounded-[20px] border border-black/8 bg-white/70 px-4 py-4">
+              External reference: {sessionSummary.externalReference}
+            </p>
+          </div>
+          <p className="text-sm text-[var(--muted)]">
+            Keep these identifiers. They are what you will use to verify webhook provisioning
+            and to drive the manual portal before customer accounts exist.
+          </p>
+        </section>
+      ) : null}
     </main>
   );
 }
