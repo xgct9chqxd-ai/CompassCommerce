@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { HostnameBadge } from "@/components/hostname-badge";
 
 const links = [
   { href: "/products/tri-comp", label: "Product" },
@@ -25,9 +26,7 @@ export function SiteHeader() {
               </span>
             </span>
           </Link>
-          <span className="hidden rounded-full border border-black/10 bg-white/70 px-3 py-1 text-[11px] uppercase tracking-[0.25em] text-[var(--muted)] sm:inline-flex">
-            Hostname pending
-          </span>
+          <HostnameBadge />
         </div>
 
         <nav className="flex flex-wrap items-center gap-2">
