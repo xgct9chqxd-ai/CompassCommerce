@@ -4,6 +4,7 @@ import { appEnv, isStripeReadyForProduct } from "@/lib/env";
 import { getStripeClient } from "@/lib/stripe";
 
 export const runtime = "nodejs";
+const seeOtherStatus = 303;
 
 function formField(formData: FormData, key: string): string {
   const value = formData.get(key);
@@ -18,13 +19,17 @@ export async function POST(request: NextRequest) {
   const product = getProduct(productId);
 
   if (!product) {
-    return NextResponse.redirect(new URL("/checkout?status=unknown_product", appEnv.siteUrl));
+    return NextResponse.redirect(
+      new URL("/checkout?status=unknown_product", appEnv.siteUrl),
+      seeOtherStatus,
+    );
   }
 
   const stripe = getStripeClient();
   if (!stripe || !isStripeReadyForProduct(product.id)) {
     return NextResponse.redirect(
       new URL(`/checkout?status=unconfigured&productId=${product.id}`, appEnv.siteUrl),
+      seeOtherStatus,
     );
   }
 
@@ -55,13 +60,15 @@ export async function POST(request: NextRequest) {
     if (!session.url) {
       return NextResponse.redirect(
         new URL(`/checkout?status=error&productId=${product.id}`, appEnv.siteUrl),
+        seeOtherStatus,
       );
     }
 
-    return NextResponse.redirect(session.url);
+    return NextResponse.redirect(session.url, seeOtherStatus);
   } catch {
     return NextResponse.redirect(
       new URL(`/checkout?status=error&productId=${product.id}`, appEnv.siteUrl),
+      seeOtherStatus,
     );
   }
 }
