@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 
 export default async function AccountOverviewPage() {
   const { supabase, user } = await requireAuthenticatedUser("/account");
-  const dashboard = await loadAccountDashboard(supabase);
+  const dashboard = await loadAccountDashboard(supabase, user.email ?? "");
 
   return (
     <section className="grid gap-6 lg:grid-cols-3">

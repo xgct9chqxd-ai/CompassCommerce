@@ -5,8 +5,8 @@ import { requireAuthenticatedUser } from "@/lib/supabase-auth";
 export const dynamic = "force-dynamic";
 
 export default async function AccountLicensesPage() {
-  const { supabase } = await requireAuthenticatedUser("/account/licenses");
-  const licenses = await loadAccountLicenses(supabase);
+  const { supabase, user } = await requireAuthenticatedUser("/account/licenses");
+  const licenses = await loadAccountLicenses(supabase, user.email ?? "");
 
   return (
     <section className="panel px-6 py-8">

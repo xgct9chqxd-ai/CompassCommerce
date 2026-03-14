@@ -38,6 +38,50 @@ type ProductGroup = {
   items: AccountDownload[];
 };
 
+type CustomerRow = {
+  id: string;
+};
+
+type OrderRow = {
+  id: string;
+  external_reference: string | null;
+  total_amount_cents: number | null;
+  currency: string | null;
+  created_at: string | null;
+};
+
+type OrderItemRow = {
+  id: string;
+  order_id: string;
+  product_id: string;
+  stripe_price_id: string | null;
+  quantity: number | null;
+};
+
+type ProvisionedEntitlementRow = {
+  id: string;
+  product_id: string;
+  entitlement_id: string;
+  license_id: string;
+  license_type: string;
+  created_at: string | null;
+};
+
+type ProductDownloadRow = {
+  id: string;
+  product_id: string;
+  platform: string;
+  version: string;
+  download_url: string;
+};
+
+type AccountCustomerContext = {
+  customerId: string;
+  orders: OrderRow[];
+  orderItems: OrderItemRow[];
+  licenses: ProvisionedEntitlementRow[];
+};
+
 function requireData<T>(label: string, data: T | null, error: { message: string } | null): T {
   if (error) {
     throw new Error(`Failed to load ${label}: ${error.message}`);
@@ -46,55 +90,106 @@ function requireData<T>(label: string, data: T | null, error: { message: string 
   return data ?? ([] as T);
 }
 
-export async function loadAccountDashboard(
+async function loadCustomerContext(
   supabase: SupabaseClient,
-): Promise<AccountDashboardSnapshot> {
-  const [ordersResult, licensesResult, productsResult] = await Promise.all([
-    supabase.from("orders").select("id", { count: "exact", head: true }),
-    supabase.from("provisioned_entitlements").select("id", { count: "exact", head: true }),
-    supabase.from("provisioned_entitlements").select("product_id"),
-  ]);
+  customerEmail: string,
+): Promise<AccountCustomerContext | null> {
+  const customerResult = await supabase
+    .from("customers")
+    .select("id")
+    .eq("email", customerEmail)
+    .limit(1)
+    .maybeSingle();
 
-  if (ordersResult.error) {
-    throw new Error(`Failed to load order count: ${ordersResult.error.message}`);
+  const customer = requireData(
+    "customer",
+    customerResult.data as CustomerRow | null,
+    customerResult.error,
+  );
+
+  if (!customer) {
+    return null;
   }
 
-  if (licensesResult.error) {
-    throw new Error(`Failed to load license count: ${licensesResult.error.message}`);
-  }
+  const ordersResult = await supabase
+    .from("orders")
+    .select("id, external_reference, total_amount_cents, currency, created_at")
+    .eq("customer_id", customer.id)
+    .order("created_at", { ascending: false });
 
-  if (productsResult.error) {
-    throw new Error(`Failed to load owned products: ${productsResult.error.message}`);
-  }
+  const orders = requireData(
+    "orders",
+    ordersResult.data as OrderRow[] | null,
+    ordersResult.error,
+  );
 
-  const ownedProducts = new Set(
-    (productsResult.data ?? []).map((row) => String((row as { product_id: string }).product_id)),
+  const orderIds = orders.map((row) => row.id);
+  const orderItemsResult = orderIds.length
+    ? await supabase
+        .from("order_items")
+        .select("id, order_id, product_id, stripe_price_id, quantity")
+        .in("order_id", orderIds)
+    : { data: [], error: null };
+
+  const orderItems = requireData(
+    "order items",
+    orderItemsResult.data as OrderItemRow[] | null,
+    orderItemsResult.error,
+  );
+
+  const licensesResult = await supabase
+    .from("provisioned_entitlements")
+    .select("id, product_id, entitlement_id, license_id, license_type, created_at")
+    .eq("customer_id", customer.id)
+    .order("created_at", { ascending: false });
+
+  const licenses = requireData(
+    "licenses",
+    licensesResult.data as ProvisionedEntitlementRow[] | null,
+    licensesResult.error,
   );
 
   return {
-    orderCount: ordersResult.count ?? 0,
-    licenseCount: licensesResult.count ?? 0,
+    customerId: customer.id,
+    orders,
+    orderItems,
+    licenses,
+  };
+}
+
+export async function loadAccountDashboard(
+  supabase: SupabaseClient,
+  customerEmail: string,
+): Promise<AccountDashboardSnapshot> {
+  const context = await loadCustomerContext(supabase, customerEmail);
+  if (!context) {
+    return {
+      orderCount: 0,
+      licenseCount: 0,
+      ownedProductCount: 0,
+    };
+  }
+
+  const ownedProducts = new Set(
+    [
+      ...context.licenses.map((row) => row.product_id),
+      ...context.orderItems.map((row) => row.product_id),
+    ],
+  );
+
+  return {
+    orderCount: context.orders.length,
+    licenseCount: context.licenses.length,
     ownedProductCount: ownedProducts.size,
   };
 }
 
-export async function loadAccountOrders(supabase: SupabaseClient): Promise<AccountOrder[]> {
-  const result = await supabase
-    .from("orders")
-    .select("id, external_reference, total_amount_cents, currency, created_at")
-    .order("created_at", { ascending: false });
-
-  const rows = requireData(
-    "orders",
-    result.data as Array<{
-      id: string;
-      external_reference: string | null;
-      total_amount_cents: number | null;
-      currency: string | null;
-      created_at: string | null;
-    }> | null,
-    result.error,
-  );
+export async function loadAccountOrders(
+  supabase: SupabaseClient,
+  customerEmail: string,
+): Promise<AccountOrder[]> {
+  const context = await loadCustomerContext(supabase, customerEmail);
+  const rows = context?.orders ?? [];
 
   return rows.map((row) => ({
     id: row.id,
@@ -105,24 +200,12 @@ export async function loadAccountOrders(supabase: SupabaseClient): Promise<Accou
   }));
 }
 
-export async function loadAccountLicenses(supabase: SupabaseClient): Promise<AccountLicense[]> {
-  const result = await supabase
-    .from("provisioned_entitlements")
-    .select("id, product_id, entitlement_id, license_id, license_type, created_at")
-    .order("created_at", { ascending: false });
-
-  const rows = requireData(
-    "licenses",
-    result.data as Array<{
-      id: string;
-      product_id: string;
-      entitlement_id: string;
-      license_id: string;
-      license_type: string;
-      created_at: string | null;
-    }> | null,
-    result.error,
-  );
+export async function loadAccountLicenses(
+  supabase: SupabaseClient,
+  customerEmail: string,
+): Promise<AccountLicense[]> {
+  const context = await loadCustomerContext(supabase, customerEmail);
+  const rows = context?.licenses ?? [];
 
   return rows.map((row) => ({
     id: row.id,
@@ -136,9 +219,20 @@ export async function loadAccountLicenses(supabase: SupabaseClient): Promise<Acc
 
 export async function loadAccountDownloads(
   supabase: SupabaseClient,
+  customerEmail: string,
 ): Promise<ProductGroup[]> {
-  const licenses = await loadAccountLicenses(supabase);
-  const ownedProductIds = [...new Set(licenses.map((license) => license.productId))];
+  const context = await loadCustomerContext(supabase, customerEmail);
+  if (!context) {
+    return [];
+  }
+
+  const ownedProductIds = [
+    ...new Set([
+      ...context.licenses.map((license) => license.product_id),
+      ...context.orderItems.map((item) => item.product_id),
+    ]),
+  ];
+
   if (ownedProductIds.length === 0) {
     return [];
   }
@@ -151,13 +245,7 @@ export async function loadAccountDownloads(
 
   const rows = requireData(
     "downloads",
-    result.data as Array<{
-      id: string;
-      product_id: string;
-      platform: string;
-      version: string;
-      download_url: string;
-    }> | null,
+    result.data as ProductDownloadRow[] | null,
     result.error,
   );
 
