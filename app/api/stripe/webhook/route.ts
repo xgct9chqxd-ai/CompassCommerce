@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { getProduct } from "@/lib/catalog";
+import { buildProvisioningIds } from "@/lib/ids";
 import { appEnv, appFlags } from "@/lib/env";
 import { LicensingRequestError, provisionEntitlement } from "@/lib/licensing";
+import { persistProvisionedPurchase } from "@/lib/purchase-records";
 import { getStripeClient } from "@/lib/stripe";
 
 export const runtime = "nodejs";
@@ -12,16 +14,37 @@ function parsePositiveInteger(value: string | undefined, fallback: number): numb
   return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
 }
 
+function extractStripeId(
+  value: string | { id: string } | null | undefined,
+): string | null {
+  if (!value) {
+    return null;
+  }
+
+  return typeof value === "string" ? value : value.id;
+}
+
+type PersistedProvisioningResult = {
+  action: string;
+  entitlementId: string;
+  licenseId: string;
+  productId: string;
+  licenseType: string;
+  machineLimit: number;
+  expiresAt: string | null;
+  offlineGraceDays: number | null;
+};
+
 export async function POST(request: NextRequest) {
   const stripe = getStripeClient();
   const signature = request.headers.get("stripe-signature");
 
-  if (!appFlags.webhookProvisioningConfigured || !stripe || !appEnv.stripeWebhookSecret) {
+  if (!appFlags.webhookPersistenceConfigured || !stripe || !appEnv.stripeWebhookSecret) {
     return NextResponse.json(
       {
         error: "webhook_not_configured",
         message:
-          "Stripe webhook handling requires STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, and LICENSING_ADMIN_API_TOKEN.",
+          "Stripe webhook handling requires STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, LICENSING_ADMIN_API_TOKEN, SUPABASE_URL, and SUPABASE_SERVICE_ROLE_KEY.",
       },
       { status: 503 },
     );
@@ -76,20 +99,35 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const expectedIds = buildProvisioningIds({
+    productId: product.id,
+    customerEmail,
+    externalReference,
+  });
+  const licenseType = metadata.licenseType ?? product.licenseType;
+  let persistedResult: PersistedProvisioningResult = {
+    action: "already_provisioned",
+    entitlementId: expectedIds.entitlementId,
+    licenseId: expectedIds.licenseId,
+    productId: product.id,
+    licenseType,
+    machineLimit: parsePositiveInteger(metadata.machineLimit, product.machineLimit),
+    expiresAt: null as string | null,
+    offlineGraceDays: parsePositiveInteger(metadata.offlineGraceDays, product.offlineGraceDays),
+  };
+
   try {
-    const result = await provisionEntitlement({
+    persistedResult = await provisionEntitlement({
       productId: product.id,
       customerEmail,
       externalReference,
-      licenseType: metadata.licenseType ?? product.licenseType,
+      licenseType,
       machineLimit: parsePositiveInteger(metadata.machineLimit, product.machineLimit),
       offlineGraceDays: parsePositiveInteger(
         metadata.offlineGraceDays,
         product.offlineGraceDays,
       ),
     });
-
-    return NextResponse.json({ received: true, ...result });
   } catch (error) {
     if (
       error instanceof LicensingRequestError
@@ -97,19 +135,51 @@ export async function POST(request: NextRequest) {
         || error.code === "entitlement_exists"
         || error.code === "license_exists")
     ) {
-      return NextResponse.json({
-        received: true,
+      persistedResult = {
+        ...persistedResult,
         action: "already_provisioned",
-        code: error.code,
-      });
+      };
+    } else {
+      return NextResponse.json(
+        {
+          error: "provision_failed",
+          message: error instanceof Error ? error.message : "Webhook provisioning failed.",
+        },
+        { status: 500 },
+      );
     }
+  }
 
+  try {
+    const lineItems = await stripe.checkout.sessions.listLineItems(session.id, { limit: 1 });
+    const lineItem = lineItems.data[0];
+    const stripePriceId = lineItem?.price?.id ?? null;
+    const quantity = lineItem?.quantity ?? 1;
+
+    await persistProvisionedPurchase({
+      customerEmail,
+      stripeCustomerId: extractStripeId(session.customer),
+      stripeCheckoutSessionId: session.id,
+      stripePaymentIntentId: extractStripeId(session.payment_intent),
+      externalReference,
+      totalAmountCents: session.amount_total ?? null,
+      currency: session.currency ?? null,
+      productId: product.id,
+      stripePriceId,
+      quantity,
+      entitlementId: persistedResult.entitlementId,
+      licenseId: persistedResult.licenseId,
+      licenseType: persistedResult.licenseType,
+    });
+  } catch (error) {
     return NextResponse.json(
       {
-        error: "provision_failed",
-        message: error instanceof Error ? error.message : "Webhook provisioning failed.",
+        error: "persistence_failed",
+        message: error instanceof Error ? error.message : "Supabase persistence failed.",
       },
       { status: 500 },
     );
   }
+
+  return NextResponse.json({ received: true, ...persistedResult });
 }

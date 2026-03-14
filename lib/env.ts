@@ -23,6 +23,9 @@ export const appEnv = {
   publicLicensingBaseUrl,
   licensingAdminApiToken: readEnv("LICENSING_ADMIN_API_TOKEN"),
   operatorDashboardToken: readEnv("OPERATOR_DASHBOARD_TOKEN"),
+  supabaseUrl: readEnv("SUPABASE_URL"),
+  supabaseAnonKey: readEnv("SUPABASE_ANON_KEY"),
+  supabaseServiceRoleKey: readEnv("SUPABASE_SERVICE_ROLE_KEY"),
   stripeSecretKey: readEnv("STRIPE_SECRET_KEY"),
   stripeWebhookSecret: readEnv("STRIPE_WEBHOOK_SECRET"),
   stripePriceIds: {
@@ -39,6 +42,16 @@ export const appFlags = {
     appEnv.stripeSecretKey
       && appEnv.stripeWebhookSecret
       && appEnv.licensingAdminApiToken,
+  ),
+  supabaseConfigured: Boolean(
+    appEnv.supabaseUrl && appEnv.supabaseServiceRoleKey,
+  ),
+  webhookPersistenceConfigured: Boolean(
+    appEnv.stripeSecretKey
+      && appEnv.stripeWebhookSecret
+      && appEnv.licensingAdminApiToken
+      && appEnv.supabaseUrl
+      && appEnv.supabaseServiceRoleKey,
   ),
 };
 
