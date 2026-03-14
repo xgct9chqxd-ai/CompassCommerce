@@ -35,6 +35,9 @@ export const appEnv = {
 
 export const appFlags = {
   stripeConfigured: Boolean(appEnv.stripeSecretKey),
+  supabaseAuthConfigured: Boolean(
+    appEnv.supabaseUrl && appEnv.supabaseAnonKey,
+  ),
   operatorProvisioningConfigured: Boolean(
     appEnv.operatorDashboardToken && appEnv.licensingAdminApiToken,
   ),

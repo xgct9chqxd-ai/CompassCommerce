@@ -4,7 +4,7 @@ import { HostnameBadge } from "@/components/hostname-badge";
 const links = [
   { href: "/products/tri-comp", label: "Product" },
   { href: "/checkout", label: "Checkout" },
-  { href: "/portal", label: "Portal" },
+  { href: "/account", label: "Account" },
   { href: "/operator/provision", label: "Operator" },
 ];
 

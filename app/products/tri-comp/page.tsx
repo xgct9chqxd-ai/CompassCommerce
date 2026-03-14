@@ -26,8 +26,8 @@ export default function TriCompProductPage() {
             <Link className="button-primary" href="/checkout">
               Continue to checkout
             </Link>
-            <Link className="button-secondary" href="/portal">
-              Test activate and refresh
+            <Link className="button-secondary" href="/account">
+              Access your account
             </Link>
           </div>
         </div>
