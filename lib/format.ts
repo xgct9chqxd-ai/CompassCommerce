@@ -1,3 +1,5 @@
+import { getProduct } from "@/lib/catalog";
+
 export function formatMoney(amountCents: number | null, currency: string | null): string {
   if (amountCents == null || !currency) {
     return "Unavailable";
@@ -27,4 +29,29 @@ export function formatDate(value: string | null): string {
     dateStyle: "medium",
     timeStyle: "short",
   });
+}
+
+export function formatProductName(productId: string): string {
+  return getProduct(productId)?.name ?? productId;
+}
+
+export function formatPlatformLabel(platform: string): string {
+  const normalized = platform.trim().toLowerCase();
+  switch (normalized) {
+    case "mac":
+    case "macos":
+    case "osx":
+      return "macOS";
+    case "win":
+    case "windows":
+      return "Windows";
+    case "linux":
+      return "Linux";
+    default:
+      return platform;
+  }
+}
+
+export function formatDownloadAction(platform: string): string {
+  return `Download for ${formatPlatformLabel(platform)}`;
 }

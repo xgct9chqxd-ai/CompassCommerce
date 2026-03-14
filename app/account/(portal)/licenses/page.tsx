@@ -1,4 +1,4 @@
-import { formatDate } from "@/lib/format";
+import { formatDate, formatProductName } from "@/lib/format";
 import { loadAccountLicenses } from "@/lib/portal-data";
 import { requireAuthenticatedUser } from "@/lib/supabase-auth";
 
@@ -11,6 +11,10 @@ export default async function AccountLicensesPage() {
   return (
     <section className="panel px-6 py-8">
       <p className="eyebrow">Licenses</p>
+      <p className="mt-3 max-w-3xl text-sm leading-7 text-[var(--muted)]">
+        Keep your license ID handy. The activation handoff is designed around purchase email plus
+        license ID, with the backend issuing the signed machine-bound payload after activation.
+      </p>
       <div className="mt-5 space-y-4">
         {licenses.length === 0 ? (
           <p className="rounded-[20px] border border-black/8 bg-white/70 px-4 py-4 text-sm text-[var(--muted)]">
@@ -24,7 +28,7 @@ export default async function AccountLicensesPage() {
             >
               <div>
                 <p className="label">Product</p>
-                <p className="mt-2 break-all">{license.productId}</p>
+                <p className="mt-2 break-all">{formatProductName(license.productId)}</p>
               </div>
               <div>
                 <p className="label">Entitlement</p>

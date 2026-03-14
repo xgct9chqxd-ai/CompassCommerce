@@ -53,6 +53,13 @@ export default function TriCompProductPage() {
                 {product.offlineGraceDays}
               </dd>
             </div>
+            <div>
+              <dt className="eyebrow">Portal delivery</dt>
+              <dd className="mt-1 text-[var(--foreground)]">
+                Downloads and license details appear in the customer account immediately after
+                successful provisioning.
+              </dd>
+            </div>
           </dl>
         </aside>
       </section>
@@ -87,6 +94,36 @@ export default function TriCompProductPage() {
               </li>
             ))}
           </ol>
+        </article>
+      </section>
+
+      <section className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+        <article className="panel px-6 py-8">
+          <p className="eyebrow">After checkout</p>
+          <div className="mt-5 space-y-3 text-sm leading-7 text-[var(--foreground)]">
+            <p className="rounded-[20px] border border-black/8 bg-white/70 px-4 py-3">
+              1. Sign in to your account with the same purchase email used at checkout.
+            </p>
+            <p className="rounded-[20px] border border-black/8 bg-white/70 px-4 py-3">
+              2. Open Downloads to grab the current build for your platform.
+            </p>
+            <p className="rounded-[20px] border border-black/8 bg-white/70 px-4 py-3">
+              3. Open Licenses to find the license ID you will enter during activation.
+            </p>
+          </div>
+        </article>
+
+        <article className="panel px-6 py-8">
+          <p className="eyebrow">Activation handoff</p>
+          <div className="mt-5 space-y-3 text-sm leading-7 text-[var(--foreground)]">
+            <p className="rounded-[20px] border border-black/8 bg-white/70 px-4 py-3">
+              Customer-facing inputs should stay simple: purchase email plus license ID.
+            </p>
+            <p className="rounded-[20px] border border-black/8 bg-white/70 px-4 py-3">
+              The installed product can resolve the matching entitlement and then activate against
+              the licensing API without exposing internal IDs in the storefront UI.
+            </p>
+          </div>
         </article>
       </section>
 
