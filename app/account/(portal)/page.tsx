@@ -68,13 +68,13 @@ export default async function AccountOverviewPage() {
                 1. Open <Link className="font-semibold text-[var(--accent)] underline-offset-4 hover:underline" href="/account/downloads">Downloads</Link> and install the current build for your platform.
               </li>
               <li className="rounded-[20px] border border-black/8 bg-white/70 px-4 py-3">
-                2. Open the plugin and activate that machine with your purchase email and license ID.
+                2. Open the plugin on the target machine and start website activation to get its device code.
               </li>
               <li className="rounded-[20px] border border-black/8 bg-white/70 px-4 py-3">
-                3. Return here to Licenses to see how many activations are used and which devices are active.
+                3. Open the matching license page here, enter that device code, and activate the machine from the site.
               </li>
               <li className="rounded-[20px] border border-black/8 bg-white/70 px-4 py-3">
-                4. If you need to free a seat, deactivate a device from the license page. You can then activate again later from the plugin as long as a seat is available.
+                4. Return to the plugin and check activation. If you need to free a seat later, deactivate a device from the license page and then activate again when needed.
               </li>
             </ol>
           </div>
@@ -97,8 +97,8 @@ export default async function AccountOverviewPage() {
           </Link>
         </div>
         <p className="mt-5 text-sm leading-7 text-[var(--muted)]">
-          The primary experience is website-managed seats and device visibility, with the plugin
-          claiming a seat directly on the target machine.
+          The primary experience is website-managed seats and website-approved device activation,
+          while the plugin keeps the local signed license and offline grace state.
         </p>
       </article>
     </section>

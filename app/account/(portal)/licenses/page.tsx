@@ -8,7 +8,12 @@ import { requireAuthenticatedUser } from "@/lib/supabase-auth";
 
 export const dynamic = "force-dynamic";
 
-export default async function AccountLicensesPage() {
+export default async function AccountLicensesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ deviceCode?: string; productId?: string }>;
+}) {
+  const { deviceCode = "", productId = "" } = await searchParams;
   const { supabase, user } = await requireAuthenticatedUser("/account/licenses");
   const licenses = await loadAccountLicenses(supabase, user.email ?? "");
   const seatSnapshots = await loadSeatSnapshotsForLicenses(licenses).catch(() => new Map());
@@ -18,9 +23,16 @@ export default async function AccountLicensesPage() {
       <p className="eyebrow">Licenses</p>
       <p className="mt-3 max-w-3xl text-sm leading-7 text-[var(--muted)]">
         Licenses now double as your activation management surface. Open a license to see seat
-        usage, active devices, and deactivate controls. Activation happens from the plugin, and
-        this page reflects those device claims live.
+        usage, active devices, and deactivate controls. For website activation, open the license
+        that matches the product and enter the device code shown in the plugin.
       </p>
+      {deviceCode ? (
+        <p className="mt-4 rounded-[20px] border border-emerald-200 bg-emerald-50 px-4 py-4 text-sm text-emerald-700">
+          Device code <span className="font-mono">{deviceCode}</span> is ready. Open the matching
+          {productId ? ` ${formatProductName(productId)} ` : " "}license below and activate that
+          device from the site.
+        </p>
+      ) : null}
       <div className="mt-5 space-y-4">
         {licenses.length === 0 ? (
           <p className="rounded-[20px] border border-black/8 bg-white/70 px-4 py-4 text-sm text-[var(--muted)]">
@@ -29,6 +41,9 @@ export default async function AccountLicensesPage() {
         ) : (
           licenses.map((license) => {
             const seatSnapshot = seatSnapshots.get(license.licenseId);
+            const manageHref = deviceCode && (!productId || productId === license.productId)
+              ? `/account/licenses/${encodeURIComponent(license.licenseId)}?deviceCode=${encodeURIComponent(deviceCode)}`
+              : `/account/licenses/${encodeURIComponent(license.licenseId)}`;
             const usageLabel = seatSnapshot
               ? `${seatSnapshot.activeMachines.length} of ${seatSnapshot.machineLimit} activations used`
               : "Usage unavailable";
@@ -65,7 +80,7 @@ export default async function AccountLicensesPage() {
                 <div className="lg:col-span-2 flex flex-wrap items-center gap-3 lg:justify-end">
                   <Link
                     className="button-primary inline-flex"
-                    href={`/account/licenses/${encodeURIComponent(license.licenseId)}`}
+                    href={manageHref}
                   >
                     Manage activations
                   </Link>

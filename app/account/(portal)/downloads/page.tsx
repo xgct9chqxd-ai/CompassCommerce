@@ -17,8 +17,9 @@ export default async function AccountDownloadsPage() {
             Ready-to-install product builds.
           </h2>
           <p className="mt-3 max-w-3xl text-sm leading-7 text-[var(--muted)]">
-            Use the latest build for your platform, then activate in the plugin with your purchase
-            email and license ID. License pages show live seat usage and active devices.
+            Use the latest build for your platform, then activate that machine from the site using
+            the device code shown in the plugin. License pages show live seat usage and active
+            devices.
           </p>
         </div>
       </div>

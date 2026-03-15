@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { LicenseDeviceActivationForm } from "@/components/license-device-activation-form";
 import { LicenseSeatManager } from "@/components/license-seat-manager";
 import { getProduct } from "@/lib/catalog";
 import { formatDate, formatProductName } from "@/lib/format";
@@ -13,10 +14,13 @@ export const dynamic = "force-dynamic";
 
 export default async function AccountLicenseDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ licenseId: string }>;
+  searchParams: Promise<{ deviceCode?: string }>;
 }) {
   const { licenseId } = await params;
+  const { deviceCode = "" } = await searchParams;
   const { supabase, user } = await requireAuthenticatedUser(`/account/licenses/${licenseId}`);
   const license = await loadAccountLicenseByLicenseId(supabase, user.email ?? "", licenseId);
 
@@ -106,11 +110,29 @@ export default async function AccountLicenseDetailPage({
       </article>
 
       <article className="panel px-6 py-8">
-        <p className="eyebrow">Activate from the plugin</p>
+        <p className="eyebrow">Activate from this site</p>
+        <h2 className="mt-3 text-3xl font-semibold tracking-tight text-[var(--foreground)]">
+          Enter the device code shown in the plugin.
+        </h2>
         <p className="mt-3 max-w-3xl text-sm leading-7 text-[var(--muted)]">
-          Download the plugin, open it on the target machine, and activate with your purchase email
-          and license ID. Once the device claims a seat, it appears here automatically. If you
-          deactivate a device here, you can activate again later within the seat limit.
+          Open Tri-Comp on the target machine, choose website activation, then type the displayed
+          code here. This page claims the seat and the plugin will finish once it checks activation.
+        </p>
+
+        <div className="mt-6">
+          <LicenseDeviceActivationForm
+            initialDeviceCode={deviceCode}
+            licenseId={license.licenseId}
+          />
+        </div>
+      </article>
+
+      <article className="panel px-6 py-8">
+        <p className="eyebrow">What happens next</p>
+        <p className="mt-3 max-w-3xl text-sm leading-7 text-[var(--muted)]">
+          The plugin now starts the machine handshake and this page approves it. Once this site
+          activates the waiting device, the plugin checks in, stores the signed local license, and
+          unlocks processing on that machine.
         </p>
       </article>
     </section>
