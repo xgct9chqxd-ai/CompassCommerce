@@ -165,6 +165,16 @@ type ProvisioningApiResponse = {
   offlineGraceDays: number | null;
 };
 
+export type LicensingIssueResponse = {
+  action: string;
+  entitlementId: string;
+  licenseId: string;
+  productId: string;
+  machineId: string;
+  offlineGraceUntil: string | null;
+  licenseClic: string;
+};
+
 export async function provisionEntitlement(input: ProvisioningInput): Promise<ProvisioningApiResponse> {
   if (!appEnv.licensingAdminApiToken) {
     throw new Error("LICENSING_ADMIN_API_TOKEN is not configured.");
@@ -186,4 +196,21 @@ export async function provisionEntitlement(input: ProvisioningInput): Promise<Pr
       Authorization: `Bearer ${appEnv.licensingAdminApiToken}`,
     },
   );
+}
+
+export async function activateResolvedEntitlement(input: {
+  entitlementId: string;
+  productId: string;
+  machineHash: string;
+}): Promise<LicensingIssueResponse> {
+  return requestJson<LicensingIssueResponse>("/v1/activate", input);
+}
+
+export async function refreshResolvedEntitlement(input: {
+  entitlementId: string;
+  productId: string;
+  machineId: string;
+  machineHash: string;
+}): Promise<LicensingIssueResponse> {
+  return requestJson<LicensingIssueResponse>("/v1/refresh", input);
 }
