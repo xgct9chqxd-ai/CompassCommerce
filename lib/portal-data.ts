@@ -217,6 +217,15 @@ export async function loadAccountLicenses(
   }));
 }
 
+export async function loadAccountLicenseByLicenseId(
+  supabase: SupabaseClient,
+  customerEmail: string,
+  licenseId: string,
+): Promise<AccountLicense | null> {
+  const licenses = await loadAccountLicenses(supabase, customerEmail);
+  return licenses.find((license) => license.licenseId === licenseId) ?? null;
+}
+
 export async function loadAccountDownloads(
   supabase: SupabaseClient,
   customerEmail: string,

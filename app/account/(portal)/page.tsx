@@ -44,7 +44,7 @@ export default async function AccountOverviewPage() {
       <article className="panel px-6 py-8 lg:col-span-2">
         <p className="eyebrow">Getting started</p>
         <h2 className="mt-3 text-3xl font-semibold tracking-tight text-[var(--foreground)]">
-          Download, install, then activate with your purchase email and license ID.
+          Download, install, export a machine request, then finish activation here in your account.
         </h2>
         {starterLicense ? (
           <div className="mt-5 space-y-4">
@@ -68,10 +68,13 @@ export default async function AccountOverviewPage() {
                 1. Open <Link className="font-semibold text-[var(--accent)] underline-offset-4 hover:underline" href="/account/downloads">Downloads</Link> and install the current build for your platform.
               </li>
               <li className="rounded-[20px] border border-black/8 bg-white/70 px-4 py-3">
-                2. In the plugin or installer, enter your purchase email and the license ID shown above.
+                2. In the plugin, choose Export Request or Copy Request on the machine you want to activate.
               </li>
               <li className="rounded-[20px] border border-black/8 bg-white/70 px-4 py-3">
-                3. The product will activate online, bind the current machine, and store the signed license locally for offline use.
+                3. Return here to Licenses, open the activation page for this license, and download the machine-bound license file.
+              </li>
+              <li className="rounded-[20px] border border-black/8 bg-white/70 px-4 py-3">
+                4. Import that file in the plugin. It will store the signed license locally for offline use and later refresh.
               </li>
             </ol>
           </div>
@@ -94,8 +97,8 @@ export default async function AccountOverviewPage() {
           </Link>
         </div>
         <p className="mt-5 text-sm leading-7 text-[var(--muted)]">
-          Refresh happens automatically after activation when the installed product reconnects to
-          the licensing service.
+          Manual email + license ID activation is still available inside the plugin as a fallback,
+          but the account-driven request/import flow is now the preferred path.
         </p>
       </article>
     </section>

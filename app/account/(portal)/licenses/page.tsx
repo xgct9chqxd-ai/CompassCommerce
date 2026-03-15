@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { formatDate, formatProductName } from "@/lib/format";
 import { loadAccountLicenses } from "@/lib/portal-data";
 import { requireAuthenticatedUser } from "@/lib/supabase-auth";
@@ -12,8 +13,9 @@ export default async function AccountLicensesPage() {
     <section className="panel px-6 py-8">
       <p className="eyebrow">Licenses</p>
       <p className="mt-3 max-w-3xl text-sm leading-7 text-[var(--muted)]">
-        Keep your license ID handy. The activation handoff is designed around purchase email plus
-        license ID, with the backend issuing the signed machine-bound payload after activation.
+        Keep your license ID handy, but the recommended flow is now portal-first: export a machine
+        request from the plugin, finish activation here, then import the downloaded license file
+        back into the plugin.
       </p>
       <div className="mt-5 space-y-4">
         {licenses.length === 0 ? (
@@ -45,6 +47,14 @@ export default async function AccountLicensesPage() {
               <div>
                 <p className="label">Created</p>
                 <p className="mt-2">{formatDate(license.createdAt)}</p>
+              </div>
+              <div className="lg:col-span-5">
+                <Link
+                  className="button-secondary inline-flex"
+                  href={`/account/licenses/${encodeURIComponent(license.licenseId)}/activate`}
+                >
+                  Activate from portal
+                </Link>
               </div>
             </article>
           ))
