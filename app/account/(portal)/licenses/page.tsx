@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { formatDate, formatProductName } from "@/lib/format";
-import { loadAccountLicenses } from "@/lib/portal-data";
+import {
+  loadAccountLicenses,
+  loadSeatSnapshotsForLicenses,
+} from "@/lib/portal-data";
 import { requireAuthenticatedUser } from "@/lib/supabase-auth";
 
 export const dynamic = "force-dynamic";
@@ -8,14 +11,15 @@ export const dynamic = "force-dynamic";
 export default async function AccountLicensesPage() {
   const { supabase, user } = await requireAuthenticatedUser("/account/licenses");
   const licenses = await loadAccountLicenses(supabase, user.email ?? "");
+  const seatSnapshots = await loadSeatSnapshotsForLicenses(licenses).catch(() => new Map());
 
   return (
     <section className="panel px-6 py-8">
       <p className="eyebrow">Licenses</p>
       <p className="mt-3 max-w-3xl text-sm leading-7 text-[var(--muted)]">
-        Keep your license ID handy, but the recommended flow is now portal-first: export a machine
-        request from the plugin, finish activation here, then import the downloaded license file
-        back into the plugin.
+        Licenses now double as your activation management surface. Open a license to see seat
+        usage, active devices, and deactivate controls. The request/import bridge remains available
+        as fallback from the detail page.
       </p>
       <div className="mt-5 space-y-4">
         {licenses.length === 0 ? (
@@ -23,41 +27,58 @@ export default async function AccountLicensesPage() {
             No licenses are visible for this account yet.
           </p>
         ) : (
-          licenses.map((license) => (
-            <article
-              key={license.id}
-              className="grid gap-4 rounded-[22px] border border-black/8 bg-white/70 px-4 py-4 text-sm text-[var(--foreground)] lg:grid-cols-5"
-            >
-              <div>
-                <p className="label">Product</p>
-                <p className="mt-2 break-all">{formatProductName(license.productId)}</p>
-              </div>
-              <div>
-                <p className="label">Entitlement</p>
-                <p className="mt-2 break-all font-mono">{license.entitlementId}</p>
-              </div>
-              <div>
-                <p className="label">License</p>
-                <p className="mt-2 break-all font-mono">{license.licenseId}</p>
-              </div>
-              <div>
-                <p className="label">Type</p>
-                <p className="mt-2">{license.licenseType}</p>
-              </div>
-              <div>
-                <p className="label">Created</p>
-                <p className="mt-2">{formatDate(license.createdAt)}</p>
-              </div>
-              <div className="lg:col-span-5">
-                <Link
-                  className="button-secondary inline-flex"
-                  href={`/account/licenses/${encodeURIComponent(license.licenseId)}/activate`}
-                >
-                  Activate from portal
-                </Link>
-              </div>
-            </article>
-          ))
+          licenses.map((license) => {
+            const seatSnapshot = seatSnapshots.get(license.licenseId);
+            const usageLabel = seatSnapshot
+              ? `${seatSnapshot.activeMachines.length} of ${seatSnapshot.machineLimit} activations used`
+              : "Usage unavailable";
+
+            return (
+              <article
+                key={license.id}
+                className="grid gap-4 rounded-[22px] border border-black/8 bg-white/70 px-4 py-4 text-sm text-[var(--foreground)] lg:grid-cols-5"
+              >
+                <div>
+                  <p className="label">Product</p>
+                  <p className="mt-2 break-all">{formatProductName(license.productId)}</p>
+                </div>
+                <div>
+                  <p className="label">Entitlement</p>
+                  <p className="mt-2 break-all font-mono">{license.entitlementId}</p>
+                </div>
+                <div>
+                  <p className="label">License</p>
+                  <p className="mt-2 break-all font-mono">{license.licenseId}</p>
+                </div>
+                <div>
+                  <p className="label">Type</p>
+                  <p className="mt-2">{license.licenseType}</p>
+                </div>
+                <div>
+                  <p className="label">Created</p>
+                  <p className="mt-2">{formatDate(license.createdAt)}</p>
+                </div>
+                <div className="lg:col-span-3">
+                  <p className="label">Activations</p>
+                  <p className="mt-2">{usageLabel}</p>
+                </div>
+                <div className="lg:col-span-2 flex flex-wrap items-center gap-3 lg:justify-end">
+                  <Link
+                    className="button-primary inline-flex"
+                    href={`/account/licenses/${encodeURIComponent(license.licenseId)}`}
+                  >
+                    Manage activations
+                  </Link>
+                  <Link
+                    className="button-secondary inline-flex"
+                    href={`/account/licenses/${encodeURIComponent(license.licenseId)}/activate`}
+                  >
+                    Fallback import flow
+                  </Link>
+                </div>
+              </article>
+            );
+          })
         )}
       </div>
     </section>

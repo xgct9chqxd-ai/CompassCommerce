@@ -44,7 +44,7 @@ export default async function AccountOverviewPage() {
       <article className="panel px-6 py-8 lg:col-span-2">
         <p className="eyebrow">Getting started</p>
         <h2 className="mt-3 text-3xl font-semibold tracking-tight text-[var(--foreground)]">
-          Download, install, export a machine request, then finish activation here in your account.
+          Download, install, then manage activation from your Compass account.
         </h2>
         {starterLicense ? (
           <div className="mt-5 space-y-4">
@@ -68,13 +68,13 @@ export default async function AccountOverviewPage() {
                 1. Open <Link className="font-semibold text-[var(--accent)] underline-offset-4 hover:underline" href="/account/downloads">Downloads</Link> and install the current build for your platform.
               </li>
               <li className="rounded-[20px] border border-black/8 bg-white/70 px-4 py-3">
-                2. In the plugin, choose Export Request or Copy Request on the machine you want to activate.
+                2. Open the plugin and activate that machine with your purchase email and license ID, or use the fallback request/import flow if you need it.
               </li>
               <li className="rounded-[20px] border border-black/8 bg-white/70 px-4 py-3">
-                3. Return here to Licenses, open the activation page for this license, and download the machine-bound license file.
+                3. Return here to Licenses to see how many activations are used and which devices are active.
               </li>
               <li className="rounded-[20px] border border-black/8 bg-white/70 px-4 py-3">
-                4. Import that file in the plugin. It will store the signed license locally for offline use and later refresh.
+                4. If you need to free a seat, deactivate a device from the license page. The plugin still stores signed local state and refreshes offline grace on its own.
               </li>
             </ol>
           </div>
@@ -97,8 +97,8 @@ export default async function AccountOverviewPage() {
           </Link>
         </div>
         <p className="mt-5 text-sm leading-7 text-[var(--muted)]">
-          Manual email + license ID activation is still available inside the plugin as a fallback,
-          but the account-driven request/import flow is now the preferred path.
+          The new primary experience is website-managed seats and device visibility. The
+          request/import bridge remains available as a fallback, not the main path.
         </p>
       </article>
     </section>

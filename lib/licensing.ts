@@ -144,6 +144,32 @@ export async function fetchLicensingHealth(): Promise<HealthSnapshot> {
   }
 }
 
+export async function listLicensingEntitlements(): Promise<LicensingEntitlementSnapshot[]> {
+  const response = await fetch(buildLicensingUrl("/v1/entitlements"), {
+    method: "GET",
+    cache: "no-store",
+  });
+
+  const body = await parseResponseBody(response);
+  if (!response.ok) {
+    throw new LicensingRequestError(
+      response.status,
+      undefined,
+      `Licensing entitlements request failed with status ${response.status}`,
+      body,
+    );
+  }
+
+  const entitlementsRaw = Array.isArray(body?.entitlements) ? body.entitlements : null;
+  if (!entitlementsRaw) {
+    throw new Error("Licensing entitlements response was malformed.");
+  }
+
+  return entitlementsRaw
+    .map((item) => parseEntitlementSnapshot(item))
+    .filter((item): item is LicensingEntitlementSnapshot => item !== null);
+}
+
 export type ProvisioningInput = {
   productId: ProductId;
   customerEmail: string;
@@ -174,6 +200,102 @@ export type LicensingIssueResponse = {
   offlineGraceUntil: string | null;
   licenseClic: string;
 };
+
+export type LicensingActiveMachine = {
+  machineId: string;
+  machineHash: string;
+  activatedAt: string;
+};
+
+export type LicensingEntitlementSnapshot = {
+  entitlementId: string;
+  licenseId: string;
+  productId: string;
+  licenseType: string;
+  machineLimit: number;
+  expiresAt: string | null;
+  offlineGraceDays: number | null;
+  activeMachines: LicensingActiveMachine[];
+  revokedMachineCount: number;
+};
+
+export type LicensingRevokeResponse = {
+  action: string;
+  entitlementId: string;
+  machineId: string;
+  revokedAt: string;
+  activeMachineCount: number;
+};
+
+function readStringValue(value: unknown): string | null {
+  return typeof value === "string" ? value : null;
+}
+
+function readNumberValue(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function parseActiveMachine(value: unknown): LicensingActiveMachine | null {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const record = value as JsonRecord;
+  const machineId = readStringValue(record.machineId);
+  const machineHash = readStringValue(record.machineHash);
+  const activatedAt = readStringValue(record.activatedAt);
+
+  if (!machineId || !machineHash || !activatedAt) {
+    return null;
+  }
+
+  return {
+    machineId,
+    machineHash,
+    activatedAt,
+  };
+}
+
+function parseEntitlementSnapshot(value: unknown): LicensingEntitlementSnapshot | null {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const record = value as JsonRecord;
+  const entitlementId = readStringValue(record.entitlementId);
+  const licenseId = readStringValue(record.licenseId);
+  const productId = readStringValue(record.productId);
+  const licenseType = readStringValue(record.licenseType);
+  const machineLimit = readNumberValue(record.machineLimit);
+  const revokedMachineCount = readNumberValue(record.revokedMachineCount);
+  const activeMachinesRaw = Array.isArray(record.activeMachines) ? record.activeMachines : null;
+
+  if (
+    !entitlementId
+    || !licenseId
+    || !productId
+    || !licenseType
+    || machineLimit === null
+    || revokedMachineCount === null
+    || !activeMachinesRaw
+  ) {
+    return null;
+  }
+
+  return {
+    entitlementId,
+    licenseId,
+    productId,
+    licenseType,
+    machineLimit,
+    expiresAt: readStringValue(record.expiresAt),
+    offlineGraceDays: readNumberValue(record.offlineGraceDays),
+    activeMachines: activeMachinesRaw
+      .map((item) => parseActiveMachine(item))
+      .filter((item): item is LicensingActiveMachine => item !== null),
+    revokedMachineCount,
+  };
+}
 
 export async function provisionEntitlement(input: ProvisioningInput): Promise<ProvisioningApiResponse> {
   if (!appEnv.licensingAdminApiToken) {
@@ -213,4 +335,11 @@ export async function refreshResolvedEntitlement(input: {
   machineHash: string;
 }): Promise<LicensingIssueResponse> {
   return requestJson<LicensingIssueResponse>("/v1/refresh", input);
+}
+
+export async function revokeResolvedEntitlement(input: {
+  entitlementId: string;
+  machineId: string;
+}): Promise<LicensingRevokeResponse> {
+  return requestJson<LicensingRevokeResponse>("/v1/revoke", input);
 }

@@ -17,8 +17,9 @@ export default async function AccountDownloadsPage() {
             Ready-to-install product builds.
           </h2>
           <p className="mt-3 max-w-3xl text-sm leading-7 text-[var(--muted)]">
-            Use the latest build for your platform, then activate in the plugin with your purchase
-            email and license ID from the portal.
+            Use the latest build for your platform, then activate in the plugin. License pages now
+            show seat usage and active devices, with the request/import bridge kept only as a
+            fallback.
           </p>
         </div>
       </div>

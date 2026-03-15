@@ -1,5 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getProduct } from "@/lib/catalog";
+import {
+  type LicensingActiveMachine,
+  listLicensingEntitlements,
+} from "@/lib/licensing";
 
 export type AccountDashboardSnapshot = {
   orderCount: number;
@@ -22,6 +26,14 @@ export type AccountLicense = {
   licenseId: string;
   licenseType: string;
   createdAt: string | null;
+};
+
+export type AccountLicenseSeatSnapshot = {
+  licenseId: string;
+  entitlementId: string;
+  machineLimit: number;
+  activeMachines: LicensingActiveMachine[];
+  revokedMachineCount: number;
 };
 
 export type AccountDownload = {
@@ -224,6 +236,37 @@ export async function loadAccountLicenseByLicenseId(
 ): Promise<AccountLicense | null> {
   const licenses = await loadAccountLicenses(supabase, customerEmail);
   return licenses.find((license) => license.licenseId === licenseId) ?? null;
+}
+
+export async function loadSeatSnapshotsForLicenses(
+  licenses: AccountLicense[],
+): Promise<Map<string, AccountLicenseSeatSnapshot>> {
+  if (licenses.length === 0) {
+    return new Map();
+  }
+
+  const licensingEntitlements = await listLicensingEntitlements();
+  const byEntitlementId = new Map(
+    licensingEntitlements.map((entitlement) => [entitlement.entitlementId, entitlement] as const),
+  );
+
+  const result = new Map<string, AccountLicenseSeatSnapshot>();
+  for (const license of licenses) {
+    const entitlement = byEntitlementId.get(license.entitlementId);
+    if (!entitlement) {
+      continue;
+    }
+
+    result.set(license.licenseId, {
+      licenseId: license.licenseId,
+      entitlementId: license.entitlementId,
+      machineLimit: entitlement.machineLimit,
+      activeMachines: entitlement.activeMachines,
+      revokedMachineCount: entitlement.revokedMachineCount,
+    });
+  }
+
+  return result;
 }
 
 export async function loadAccountDownloads(

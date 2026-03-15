@@ -87,8 +87,11 @@ export default async function AccountLicenseActivationPage({
           customer journey.
         </p>
         <div className="mt-5 flex flex-wrap gap-3">
-          <Link className="button-secondary" href="/account/licenses">
-            Back to licenses
+          <Link
+            className="button-secondary"
+            href={`/account/licenses/${encodeURIComponent(license.licenseId)}`}
+          >
+            Back to activation management
           </Link>
           <Link className="button-secondary" href="/account/downloads">
             Open downloads
