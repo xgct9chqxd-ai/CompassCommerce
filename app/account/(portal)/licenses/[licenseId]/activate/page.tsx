@@ -7,12 +7,12 @@ export default async function AccountLicenseActivationRedirectPage({
   searchParams,
 }: {
   params: Promise<{ licenseId: string }>;
-  searchParams: Promise<{ deviceCode?: string }>;
+  searchParams: Promise<{ activationRequest?: string }>;
 }) {
   const { licenseId } = await params;
-  const { deviceCode = "" } = await searchParams;
-  const target = deviceCode
-    ? `/account/licenses/${encodeURIComponent(licenseId)}?deviceCode=${encodeURIComponent(deviceCode)}`
+  const { activationRequest = "" } = await searchParams;
+  const target = activationRequest
+    ? `/account/licenses/${encodeURIComponent(licenseId)}?activationRequest=${encodeURIComponent(activationRequest)}`
     : `/account/licenses/${encodeURIComponent(licenseId)}`;
 
   redirect(target);

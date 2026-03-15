@@ -37,9 +37,14 @@ export async function POST(
     return jsonError(400, "malformed_request", "Request body must be valid JSON.");
   }
 
+  const activationRequest = readString(body.activationRequest);
   const deviceCode = readString(body.deviceCode);
-  if (!deviceCode) {
-    return jsonError(400, "malformed_request", "Enter the device code shown in the plugin.");
+  if (!activationRequest && !deviceCode) {
+    return jsonError(
+      400,
+      "malformed_request",
+      "Open the plugin on the target machine first, then activate it from your account.",
+    );
   }
 
   const { licenseId } = await context.params;
@@ -52,7 +57,8 @@ export async function POST(
     const result = await activateDevicePairing({
       license: ownedLicense,
       customerEmail: user.email,
-      deviceCode,
+      requestId: activationRequest || undefined,
+      deviceCode: deviceCode || undefined,
     });
 
     return NextResponse.json(result, { status: 200 });

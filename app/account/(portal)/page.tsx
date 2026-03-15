@@ -68,13 +68,15 @@ export default async function AccountOverviewPage() {
                 1. Open <Link className="font-semibold text-[var(--accent)] underline-offset-4 hover:underline" href="/account/downloads">Downloads</Link> and install the current build for your platform.
               </li>
               <li className="rounded-[20px] border border-black/8 bg-white/70 px-4 py-3">
-                2. Open the plugin on the target machine and start website activation to get its device code.
+                2. Open the plugin on the target machine. It will open your Compass account when
+                activation is needed.
               </li>
               <li className="rounded-[20px] border border-black/8 bg-white/70 px-4 py-3">
-                3. Open the matching license page here, enter that device code, and activate the machine from the site.
+                3. In your account, click Activate on the matching product to approve that machine.
               </li>
               <li className="rounded-[20px] border border-black/8 bg-white/70 px-4 py-3">
-                4. Return to the plugin and check activation. If you need to free a seat later, deactivate a device from the license page and then activate again when needed.
+                4. Return to the plugin and finish activation. If you need to free a seat later,
+                deactivate a device from the license page and activate again when needed.
               </li>
             </ol>
           </div>

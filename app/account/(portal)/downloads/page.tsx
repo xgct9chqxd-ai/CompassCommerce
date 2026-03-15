@@ -17,9 +17,9 @@ export default async function AccountDownloadsPage() {
             Ready-to-install product builds.
           </h2>
           <p className="mt-3 max-w-3xl text-sm leading-7 text-[var(--muted)]">
-            Use the latest build for your platform, then activate that machine from the site using
-            the device code shown in the plugin. License pages show live seat usage and active
-            devices.
+            Use the latest build for your platform, then approve that machine from your Compass
+            account. License pages show live seat usage, active devices, and one-click activation
+            when a plugin is waiting on a new machine.
           </p>
         </div>
       </div>

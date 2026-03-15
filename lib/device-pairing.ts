@@ -35,6 +35,15 @@ export type DevicePairingSession = {
   verificationUrl: string;
 };
 
+export type PendingPortalActivation = {
+  requestId: string;
+  productId: string;
+  platform: string | null;
+  requestedAt: string;
+  expiresAt: string;
+  verificationUrl: string;
+};
+
 export type DevicePairingStatusResponse =
   | {
       status: "pending";
@@ -122,10 +131,10 @@ export function normalizeDeviceCode(input: string): string {
   return `${raw.slice(0, 4)}-${raw.slice(4, 8)}`;
 }
 
-function buildVerificationUrl(productId: string, deviceCode: string): string {
+function buildVerificationUrl(productId: string, requestId: string): string {
   const url = new URL("/account/licenses", appEnv.siteUrl);
   url.searchParams.set("productId", productId);
-  url.searchParams.set("deviceCode", deviceCode);
+  url.searchParams.set("activationRequest", requestId);
   return url.toString();
 }
 
@@ -209,12 +218,13 @@ export async function beginDevicePairing(input: {
       .single();
 
     if (!insertResult.error && insertResult.data) {
+      const requestId = String((insertResult.data as { id: string }).id);
       return {
-        requestId: String((insertResult.data as { id: string }).id),
+        requestId,
         deviceCode,
         pollToken,
         expiresAt,
-        verificationUrl: buildVerificationUrl(input.productId, deviceCode),
+        verificationUrl: buildVerificationUrl(input.productId, requestId),
       };
     }
 
@@ -285,38 +295,47 @@ export async function pollDevicePairing(input: {
     status: "pending",
     deviceCode: request.device_code,
     expiresAt: request.expires_at,
-    verificationUrl: buildVerificationUrl(request.product_id, request.device_code),
+    verificationUrl: buildVerificationUrl(request.product_id, request.id),
   };
 }
 
 export async function activateDevicePairing(input: {
   license: AccountLicense;
   customerEmail: string;
-  deviceCode: string;
+  requestId?: string;
+  deviceCode?: string;
 }): Promise<DevicePairingActivationResult> {
-  const normalizedCode = normalizeDeviceCode(input.deviceCode);
-  if (!/^[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(normalizedCode)) {
-    throw new DevicePairingError(
-      400,
-      "invalid_device_code",
-      "Enter the 8-character device code shown in the plugin.",
-    );
+  let request: DeviceActivationRequestRow | null = null;
+
+  const requestId = input.requestId?.trim() ?? "";
+  if (requestId) {
+    request = await readPairingById(requestId);
+  } else {
+    const normalizedCode = normalizeDeviceCode(input.deviceCode ?? "");
+    if (!/^[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(normalizedCode)) {
+      throw new DevicePairingError(
+        400,
+        "invalid_device_code",
+        "Open the plugin on the target machine first, then try activating it again from your account.",
+      );
+    }
+
+    request = await readPairingByCode(normalizedCode);
   }
 
-  const request = await readPairingByCode(normalizedCode);
   if (!request) {
     throw new DevicePairingError(
       404,
-      "device_code_not_found",
-      "No pending device activation matches that code.",
+      "activation_request_not_found",
+      "No pending device activation is waiting for this account right now.",
     );
   }
 
   if (request.product_id !== input.license.productId) {
     throw new DevicePairingError(
       409,
-      "device_code_product_mismatch",
-      "That device code belongs to a different product.",
+      "activation_request_product_mismatch",
+      "That waiting device belongs to a different product.",
     );
   }
 
@@ -339,8 +358,8 @@ export async function activateDevicePairing(input: {
 
     throw new DevicePairingError(
       409,
-      "device_code_unavailable",
-      "That device code has already been used.",
+      "activation_request_unavailable",
+      "That device is no longer waiting for activation.",
     );
   }
 
@@ -351,8 +370,8 @@ export async function activateDevicePairing(input: {
 
     throw new DevicePairingError(
       410,
-      "device_code_expired",
-      "That device code expired. Generate a new code from the plugin.",
+      "activation_request_expired",
+      "That pending activation expired. Reopen the plugin and try again.",
     );
   }
 
@@ -388,5 +407,39 @@ export async function activateDevicePairing(input: {
     licenseId: input.license.licenseId,
     productId: input.license.productId,
     offlineGraceUntil: result.offlineGraceUntil,
+  };
+}
+
+export async function loadPendingPortalActivation(
+  requestId: string,
+): Promise<PendingPortalActivation | null> {
+  const normalizedRequestId = requestId.trim();
+  if (!normalizedRequestId) {
+    return null;
+  }
+
+  const request = await readPairingById(normalizedRequestId);
+  if (!request) {
+    return null;
+  }
+
+  if (request.status === "expired" || isExpired(request.expires_at)) {
+    if (request.status !== "expired") {
+      await markPairingStatus(request.id, "expired");
+    }
+    return null;
+  }
+
+  if (request.status !== "pending") {
+    return null;
+  }
+
+  return {
+    requestId: request.id,
+    productId: request.product_id,
+    platform: request.platform,
+    requestedAt: request.requested_at,
+    expiresAt: request.expires_at,
+    verificationUrl: buildVerificationUrl(request.product_id, request.id),
   };
 }
