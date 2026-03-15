@@ -23,17 +23,15 @@ export function LicenseManagerRow({
   productName: string;
 }) {
   const router = useRouter();
-  const [notice, setNotice] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [pendingKey, setPendingKey] = useState("");
   const [isPending, startTransition] = useTransition();
 
   function runActivate() {
-    setNotice("");
     setErrorMessage("");
 
     if (!activationRequest) {
-      setNotice(`Open ${productName} on the machine you want to use, then come back here and click Activate.`);
+      window.alert(`Open ${productName} once on the target machine, then come back here and click Activate.`);
       return;
     }
 
@@ -58,7 +56,6 @@ export function LicenseManagerRow({
           throw new Error(body?.message ?? "Activation failed.");
         }
 
-        setNotice(`${productName} activated.`);
         router.refresh();
       } catch (error) {
         setErrorMessage(error instanceof Error ? error.message : "Activation failed.");
@@ -69,7 +66,6 @@ export function LicenseManagerRow({
   }
 
   function runDeactivate(machineId: string) {
-    setNotice("");
     setErrorMessage("");
     setPendingKey(machineId);
 
@@ -87,7 +83,6 @@ export function LicenseManagerRow({
           throw new Error(body?.message ?? "Deactivation failed.");
         }
 
-        setNotice(`${machineId} deactivated.`);
         router.refresh();
       } catch (error) {
         setErrorMessage(error instanceof Error ? error.message : "Deactivation failed.");
@@ -148,12 +143,6 @@ export function LicenseManagerRow({
       {errorMessage ? (
         <p className="mt-4 rounded-[16px] border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {errorMessage}
-        </p>
-      ) : null}
-
-      {!errorMessage && notice ? (
-        <p className="mt-4 rounded-[16px] border border-black/8 bg-white/80 px-4 py-3 text-sm text-[var(--muted)]">
-          {notice}
         </p>
       ) : null}
     </article>
