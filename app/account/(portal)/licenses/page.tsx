@@ -18,8 +18,8 @@ export default async function AccountLicensesPage() {
       <p className="eyebrow">Licenses</p>
       <p className="mt-3 max-w-3xl text-sm leading-7 text-[var(--muted)]">
         Licenses now double as your activation management surface. Open a license to see seat
-        usage, active devices, and deactivate controls. The request/import bridge remains available
-        as fallback from the detail page.
+        usage, active devices, and deactivate controls. Activation happens from the plugin, and
+        this page reflects those device claims live.
       </p>
       <div className="mt-5 space-y-4">
         {licenses.length === 0 ? (
@@ -68,12 +68,6 @@ export default async function AccountLicensesPage() {
                     href={`/account/licenses/${encodeURIComponent(license.licenseId)}`}
                   >
                     Manage activations
-                  </Link>
-                  <Link
-                    className="button-secondary inline-flex"
-                    href={`/account/licenses/${encodeURIComponent(license.licenseId)}/activate`}
-                  >
-                    Fallback import flow
                   </Link>
                 </div>
               </article>

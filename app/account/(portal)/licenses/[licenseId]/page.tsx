@@ -40,7 +40,8 @@ export default async function AccountLicenseDetailPage({
         <p className="mt-4 max-w-3xl text-sm leading-7 text-[var(--muted)]">
           This page is the management plane for the license. The plugin still stores local signed
           license state, refreshes offline grace, and unlocks processing locally, but this account
-          page now shows seat usage and lets you deactivate devices.
+          page shows seat usage, active devices, and lets you deactivate devices when you need to
+          free a seat.
         </p>
 
         <div className="mt-5 grid gap-4 rounded-[22px] border border-black/8 bg-white/75 px-5 py-5 text-sm lg:grid-cols-4">
@@ -72,19 +73,17 @@ export default async function AccountLicenseDetailPage({
             </h2>
             <p className="mt-3 max-w-3xl text-sm leading-7 text-[var(--muted)]">
               Active devices come from the licensing backend&apos;s current machine state. Deactivating
-              here frees a seat for another machine.
+              here frees a seat for another machine, and the plugin can claim that seat again on
+              the next activation.
             </p>
           </div>
 
           <div className="flex flex-wrap gap-3">
-            <Link
-              className="button-primary"
-              href={`/account/licenses/${encodeURIComponent(license.licenseId)}/activate`}
-            >
-              Fallback request/import flow
-            </Link>
-            <Link className="button-secondary" href="/account/downloads">
+            <Link className="button-primary" href="/account/downloads">
               Open downloads
+            </Link>
+            <Link className="button-secondary" href="/account/licenses">
+              Back to licenses
             </Link>
           </div>
         </div>
@@ -107,17 +106,12 @@ export default async function AccountLicenseDetailPage({
       </article>
 
       <article className="panel px-6 py-8">
-        <p className="eyebrow">Current direction</p>
+        <p className="eyebrow">Activate from the plugin</p>
         <p className="mt-3 max-w-3xl text-sm leading-7 text-[var(--muted)]">
-          The request/import flow remains available as fallback, but this license page is the new
-          primary management surface. The next evolution is account-style plugin sign-in and device
-          naming, not more request/import polish.
+          Download the plugin, open it on the target machine, and activate with your purchase email
+          and license ID. Once the device claims a seat, it appears here automatically. If you
+          deactivate a device here, you can activate again later within the seat limit.
         </p>
-        <div className="mt-5 flex flex-wrap gap-3">
-          <Link className="button-secondary" href="/account/licenses">
-            Back to licenses
-          </Link>
-        </div>
       </article>
     </section>
   );

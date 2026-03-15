@@ -68,13 +68,13 @@ export default async function AccountOverviewPage() {
                 1. Open <Link className="font-semibold text-[var(--accent)] underline-offset-4 hover:underline" href="/account/downloads">Downloads</Link> and install the current build for your platform.
               </li>
               <li className="rounded-[20px] border border-black/8 bg-white/70 px-4 py-3">
-                2. Open the plugin and activate that machine with your purchase email and license ID, or use the fallback request/import flow if you need it.
+                2. Open the plugin and activate that machine with your purchase email and license ID.
               </li>
               <li className="rounded-[20px] border border-black/8 bg-white/70 px-4 py-3">
                 3. Return here to Licenses to see how many activations are used and which devices are active.
               </li>
               <li className="rounded-[20px] border border-black/8 bg-white/70 px-4 py-3">
-                4. If you need to free a seat, deactivate a device from the license page. The plugin still stores signed local state and refreshes offline grace on its own.
+                4. If you need to free a seat, deactivate a device from the license page. You can then activate again later from the plugin as long as a seat is available.
               </li>
             </ol>
           </div>
@@ -97,8 +97,8 @@ export default async function AccountOverviewPage() {
           </Link>
         </div>
         <p className="mt-5 text-sm leading-7 text-[var(--muted)]">
-          The new primary experience is website-managed seats and device visibility. The
-          request/import bridge remains available as a fallback, not the main path.
+          The primary experience is website-managed seats and device visibility, with the plugin
+          claiming a seat directly on the target machine.
         </p>
       </article>
     </section>
